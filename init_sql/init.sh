@@ -1,3 +1,3 @@
 #!/bin/bash
-
-sqlite3 init_hashmaster < init_create.sql
+cd init_sql
+sqlite3 ../database/init_hashmaster < init_create.sql
