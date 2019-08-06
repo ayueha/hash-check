@@ -67,10 +67,13 @@ class HashScan():
         elif self.option == "f" and self.path !="":
             if self.check_file(self.path):
                 record_number=self.db.find_hash(self.db.create_connection(),self.path)
-            if record_number ==1 :
+            if record_number[0][0] == 1:
                 print ('Current hash record has found')
                 record_info = self.db.select_hash(self.db.create_connection(),self.path)
-            elif record_number == 0:
+                for r in record_info[0]:
+                    print (str(r) + '\n')
+                print ("Do you retrieve hash again ? \n")
+            elif record_number[0][0] == 0:
                 print ('Check new file hash info')
                 if self.check_file(self.path):
                     self.import_hash(self.hash_string(self.path), self.path)
@@ -101,7 +104,7 @@ class HashScan():
         import hash (sha256) and file name
         :return:None
         """
-        self.db.insert_column(self.db.create_connection(), hash, filename)
+        self.db.insert_column(self.db.create_connection(), hash, filename,self.option)
 
 
 class DatabaseInfo():
@@ -122,23 +125,31 @@ class DatabaseInfo():
         con = sqlite3.connect(self.db_path)
         return con
 
-    def insert_column(self, cur, hash, filename):
-        sqlstring = 'insert into INIT_HASH  (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("'+ filename +'", "' + hash +'",0, "' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'","'+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'")'
+    def insert_column(self, cur, hash, filename, option):
+        if option == 'i':
+            table = 'INIT_HASH'
+        elif option == 'f' or option == 'd':
+            table = 'SCAN_HASH'
+
+        sqlstring = 'insert into ' + table + '  (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("'+ filename +'", "' + hash +'",0, "' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'","'+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'")'
         cur.execute(sqlstring)
         cur.commit()
         cur.close()
 
     def find_hash (self,cur,filename):
+        r = cur.cursor()
         sqlstring = 'select count() as record_number from INIT_HASH where FILE_NAME =' + '"' + filename + '"'
-        cur.execute(sqlstring)
-        record_number = cur.fetchall()
+        r.execute(sqlstring)
+        record = r.fetchall()
+        r.close()
+        return record
 
-        return record_number
-
-    def select_hash(self,cur,filename):
+    def select_hash(self, cur, filename):
         sqlstring = 'select FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE from INIT_HASH where FILE_NAME =' + '"' + filename + '"'
-        cur.execute(sqlstring)
-        detail_hash = cur.fetchall()
+        r = cur.cursor()
+        r.execute(sqlstring)
+        detail_hash = r.fetchall()
+        r.close()
         return detail_hash
 
 if __name__ == '__main__':
