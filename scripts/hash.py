@@ -21,8 +21,9 @@ import hashlib
 import sqlite3
 import datetime
 
+
 """GLOBAL"""
-DB_PATH = "'../database/init_hashmaster'"
+DB_PATH = "../database/init_hashmaster"
 
 
 def parser():
@@ -53,11 +54,13 @@ class HashScan():
         and import hash info via sql script
         :return:
         """
-        pathArray = ["/usr/bin", "/home", "/tmp", "/opt"]
+        homedir = os.path.expanduser("~")
+        pathArray = [homedir, "/tmp/", "/opt/"]
         for d in pathArray:
             files = os.listdir(d)
             for f in files:
-                self.import_hash(self.hash_string(f),f)
+                if os.path.isfile(os.path.join(d, f)) and os.path.getsize(os.path.join(d, f)):
+                    self.import_hash(self.hash_string(os.path.join(d, f)), os.path.join(d, f))
 
         """files = os.listdir(path)"""
 
@@ -102,13 +105,13 @@ class DatabaseInfo():
         return con
 
     def insert_column(self, cur, hash, filename):
-        sqlstring = "insert into INIT_HASH  ('FILE_NAME','HASH', 'SCANED_FLAG', 'INSERTED_DATE', 'UPDATED_DATE') values ('"+ filename +"', '" + hash +"',0, '" + str(datetime.datetime) +"','"+str(datetime.datetime)+"')"
+        sqlstring = 'insert into INIT_HASH  (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("'+ filename +'", "' + hash +'",0, "' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'","'+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'")'
         cur.execute(sqlstring)
         cur.commit()
         cur.close()
 
 
 if __name__ == '__main__':
-    hashScan = HashScan(parser())
-    hashScan.initialDatabase()
+    scan = HashScan(parser())
+    scan.initial_database()
 
