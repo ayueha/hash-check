@@ -19,9 +19,11 @@ import argparse
 import os
 import hashlib
 import sqlite3
+import datetime
 
 """GLOBAL"""
 DB_PATH = "'../database/init_hashmaster'"
+
 
 def parser():
     """
@@ -34,7 +36,7 @@ def parser():
     return args.attributes
 
 
-class hashscan():
+class HashScan():
     """
     Hash scanning
     path: target directory
@@ -44,9 +46,8 @@ class hashscan():
     def __init__(self, option):
         self.option = option
         self.path = ''
-        self.filename = ''
 
-    def initialDatabase(self):
+    def initial_database(self):
         """
         scanning : /usr/bin /home /tmp /opt
         and import hash info via sql script
@@ -56,12 +57,11 @@ class hashscan():
         for d in pathArray:
             files = os.listdir(d)
             for f in files:
-                self.importHash(self.hash_string(f))
+                self.import_hash(self.hash_string(f),f)
 
         """files = os.listdir(path)"""
 
-
-    def hash_string(self,filename, block_size = 56636):
+    def hash_string(self, filename, block_size=56636):
         """
         Check file hash in sha256
         :param filename:file name under its directory
@@ -74,18 +74,16 @@ class hashscan():
                 sha256.update(block)
         return sha256.hexdigest()
 
-
-    def import_hash(self):
+    def import_hash(self,hash, filename):
         """
-
-        :return:
+        import hash (sha256) and file name
+        :return:None
         """
+        db = DatabaseInfo()
+        db.insert_column(db.create_connection(), hash, filename)
 
-        db = databaseInfo()
-        db.insert_column(db.create_connection())
 
-
-class databaseInfo():
+class DatabaseInfo():
     """
     Database path , executing SQL commands
     """
@@ -103,15 +101,14 @@ class databaseInfo():
         con = sqlite3.connect(self.db_path)
         return con
 
-    def insert_column(self, cur):
-        sqlstring = ""
+    def insert_column(self, cur, hash, filename):
+        sqlstring = "insert into INIT_HASH  ('FILE_NAME','HASH', 'SCANED_FLAG', 'INSERTED_DATE', 'UPDATED_DATE') values ('"+ filename +"', '" + hash +"',0, '" + str(datetime.datetime) +"','"+str(datetime.datetime)+"')"
         cur.execute(sqlstring)
         cur.commit()
         cur.close()
 
-    def initial_creation(self):
 
 if __name__ == '__main__':
-    hashScan = hashscan(parser())
+    hashScan = HashScan(parser())
     hashScan.initialDatabase()
 
