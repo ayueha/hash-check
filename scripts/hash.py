@@ -80,13 +80,13 @@ class HashScan():
                 print ('Current hash record has found')
                 record_info = self.db.select_hash(self.db.create_connection(),self.path)
                 for r in record_info[0]:
-                    print (str(r) + '\n')
-                print ("Do you retrieve hash again ? \n press[Enter] to send or [n] to abort'")
+                    print (r)
+                print ("Do you retrieve hash again ? \npress[Enter] to send or [n] to abort")
                 str = input()
                 if (str == 'n' or str.lower() == 'n'):
                     print ('abort process')
                 elif (str == ''):
-                    self.import_hash(self.hash_string(self.path), self.path,self.option)
+                    self.import_hash(self.hash_string(self.path), self.path)
             elif record_number[0][0] == 0:
                 print ('Check new file hash info : ' + self.path)
                 if self.check_file(self.path):
