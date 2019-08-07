@@ -14,25 +14,30 @@ Development environment
    python3 version :3.7
    testing environment : raspberry pi 3 Model B V1.2
 
+SAVAPI server-client ( query_hash and hash_string) sample script from Koichi Uchida
+
 """
 import argparse
 import os
 import hashlib
 import sqlite3
 import datetime
+import socket
+import sys
 
 
 """GLOBAL"""
 DB_PATH = "../database/init_hashmaster"
+SERVER_IP = "192.168.10.30"
 
 
 def parser():
     """
     Option parser of python script
-    :return:args.attributes
+    :return:args.attributes as script options [i] initialize hash database, [d] create hash under a directory, [f] create a file hash
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] scan a file')
+    parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] create a file hash')
     parser.add_argument('path', help='mandatory for directory or file hash creating')
     args = parser.parse_args()
     return args.attributes, args.path
@@ -43,16 +48,19 @@ class HashScan():
     Hash scanning
     path: target directory
     file: target file
+    db : database connection
+    file : hashed file in hex
     """
 
     def __init__(self, option, path):
         self.option = option
         self.path = path
         self.db = DatabaseInfo()
+        self.file_hash =''
 
     def create_info(self):
         """
-        scanning : /usr/bin /home /tmp /opt
+        scanning : /usr/bin /home/[current user] /tmp /opt
         and import hash info via sql script
         :return:
         """
@@ -64,6 +72,7 @@ class HashScan():
                 for f in files:
                     if self.check_file(os.path.join(d, f)):
                         self.import_hash(self.hash_string(os.path.join(d, f)), os.path.join(d, f))
+
         elif self.option == "f" and self.path !="":
             if self.check_file(self.path):
                 record_number=self.db.find_hash(self.db.create_connection(),self.path)
@@ -72,11 +81,22 @@ class HashScan():
                 record_info = self.db.select_hash(self.db.create_connection(),self.path)
                 for r in record_info[0]:
                     print (str(r) + '\n')
-                print ("Do you retrieve hash again ? \n")
+                print ("Do you retrieve hash again ? \n press[Enter] to send or [n] to abort'")
+                str = input()
+                if (str == 'n' or str.lower() == 'n'):
+                    print ('abort process')
+                elif (str == ''):
+                    self.import_hash(self.hash_string(self.path), self.path,self.option)
             elif record_number[0][0] == 0:
-                print ('Check new file hash info')
+                print ('Check new file hash info : ' + self.path)
                 if self.check_file(self.path):
                     self.import_hash(self.hash_string(self.path), self.path)
+                print ('created hash information : ' + self.path + self.file_hash + '\n Get it sent to SAVAPI ? press[Enter] to send or [n] to abort')
+                str = input()
+                if (str == 'n' or str.lower() == 'n'):
+                    print ('abort process')
+                elif (str == ''):
+                    self.query_hash()
 
 
     def check_file(self,filepath):
@@ -97,7 +117,9 @@ class HashScan():
         with open(filename, 'rb') as f:
             for block in iter(lambda : f.read(block_size), b''):
                 sha256.update(block)
-        return sha256.hexdigest()
+
+        self.file_hash = sha256.hexdigest()
+        return self.file_hash
 
     def import_hash(self,hash, filename):
         """
@@ -105,6 +127,23 @@ class HashScan():
         :return:None
         """
         self.db.insert_column(self.db.create_connection(), hash, filename,self.option)
+
+    def query_hash(self):
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((SERVER_IP, 5000))
+        client.send(self.file_hash.encode('utf-8'))
+        response = client.recv(4096)
+        response = response.decode('utf-8').split(";")
+        code = response[0].split()
+
+        if code[0] == "200":
+            result = "CLEAN"
+            print ("File : " + self.path + " " + result)
+        elif code[0] == "310":
+            result = "MALICIOUS"
+            print("File : " + self.path + " " + result)
+            print("Name :" + response[1])
+            print("Desc :" + response[2] + "\n")
 
 
 class DatabaseInfo():
