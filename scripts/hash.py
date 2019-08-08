@@ -24,10 +24,11 @@ import sqlite3
 import datetime
 import socket
 import sys
+from hmac import compare_digest
 
 
 """GLOBAL"""
-DB_PATH = "../database/init_hashmaster"
+DB_PATH = "../database/hashmaster"
 SERVER_IP = "192.168.10.30"
 
 
@@ -38,7 +39,7 @@ def parser():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] create a file hash')
-    parser.add_argument('path', help='mandatory for directory or file hash creating')
+    parser.add_argument('--path', help='mandatory for directory or file hash creating')
     args = parser.parse_args()
     return args.attributes, args.path
 
@@ -57,6 +58,7 @@ class HashScan():
         self.path = path
         self.db = DatabaseInfo()
         self.file_hash =''
+        """self.con = self.db.create_connection()"""
 
     def create_info(self):
         """
@@ -71,26 +73,41 @@ class HashScan():
                 files = os.listdir(d)
                 for f in files:
                     if self.check_file(os.path.join(d, f)):
-                        self.import_hash(self.hash_string(os.path.join(d, f)), os.path.join(d, f))
+                        self.db.insert_column( self.hash_string(os.path.join(d, f)), os.path.join(d, f), self.option, 0)
 
-        elif self.option == "f" and self.path !="":
+        elif self.option == "f" and self.path != "":
             if self.check_file(self.path):
-                record_number=self.db.find_hash(self.db.create_connection(),self.path)
+                record_number=self.db.find_hash(self.path)
             if record_number[0][0] == 1:
                 print ('Current hash record has found')
-                record_info = self.db.select_hash(self.db.create_connection(),self.path)
+                record_info = self.db.select_hash(self.path)
                 for r in record_info[0]:
                     print (r)
-                print ("Do you retrieve hash again ? \npress[Enter] to send or [n] to abort")
-                str = input()
-                if (str == 'n' or str.lower() == 'n'):
-                    print ('abort process')
-                elif (str == ''):
-                    self.import_hash(self.hash_string(self.path), self.path)
+                previous_hash = record_info[0][1]
+                current_hash = self.hash_string(self.path)
+
+                if (compare_digest(previous_hash, previous_hash)):
+                    print("Get hash updated ? \npress[Enter] to send or [n] to abort")
+                    str = input()
+                    if (str == 'n' or str.lower() == 'n'):
+                        print ('abort process')
+                    elif (str == ''):
+                        self.db.insert_column(self.hash_string(self.path), self.path, self.option, record_number[0][0])
+                else:
+                    print('Previous hash is ' + previous_hash + '\n')
+                    print('Current  hash is ' + current_hash + '\n')
+                    print()
+                    print("Hash is different. Get hash updated and inquiry to SAVAPI or abort?  \npress[Enter] to send or [n] to abort")
+                    str = input()
+                    if (str == 'n' or str.lower() == 'n'):
+                        print('abort process')
+                    elif (str == ''):
+                        self.db.insert_column(self.hash_string(self.path), self.path, self.option, record_number[0][0])
+
             elif record_number[0][0] == 0:
                 print ('Check new file hash info : ' + self.path)
                 if self.check_file(self.path):
-                    self.import_hash(self.hash_string(self.path), self.path)
+                    self.db.insert_column(self.hash_string(self.path), self.path, self.option,record_number[0][0])
                 print ('created hash information : ' + self.path + self.file_hash + '\n Get it sent to SAVAPI ? press[Enter] to send or [n] to abort')
                 str = input()
                 if (str == 'n' or str.lower() == 'n'):
@@ -121,12 +138,6 @@ class HashScan():
         self.file_hash = sha256.hexdigest()
         return self.file_hash
 
-    def import_hash(self,hash, filename):
-        """
-        import hash (sha256) and file name
-        :return:None
-        """
-        self.db.insert_column(self.db.create_connection(), hash, filename,self.option)
 
     def query_hash(self):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -164,27 +175,33 @@ class DatabaseInfo():
         con = sqlite3.connect(self.db_path)
         return con
 
-    def insert_column(self, cur, hash, filename, option):
+    def insert_column(self, hash, filename, option, colum_number):
         if option == 'i':
-            table = 'INIT_HASH'
+            cur = self.create_connection()
+            sqlstring = 'insert into HASH (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("' + filename + '", "' + hash + '",0, "' + datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S") + '","' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '")'
         elif option == 'f' or option == 'd':
-            table = 'SCAN_HASH'
+            cur = self.create_connection()
+            if colum_number == 0:
+                sqlstring = 'insert into HASH (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("' + filename + '", "' + hash + '",0, "' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '","' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '")'
+            elif colum_number >0:
+                sqlstring = 'update HASH set HASH="' + hash + '", SCANED_FLAG=1, UPDATED_DATE="'+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '" where FILE_NAME="' + filename + '"'
 
-        sqlstring = 'insert into ' + table + '  (FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE) values ("'+ filename +'", "' + hash +'",0, "' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'","'+ datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") +'")'
         cur.execute(sqlstring)
         cur.commit()
         cur.close()
 
-    def find_hash (self,cur,filename):
-        r = cur.cursor()
-        sqlstring = 'select count() as record_number from INIT_HASH where FILE_NAME =' + '"' + filename + '"'
-        r.execute(sqlstring)
+    def find_hash (self,filename):
+        cur = self.create_connection()
+        sqlstring = 'select count() as record_number from HASH where FILE_NAME =' + '"' + filename + '"'
+        r = cur.execute(sqlstring)
         record = r.fetchall()
-        r.close()
+        cur.close()
         return record
 
-    def select_hash(self, cur, filename):
-        sqlstring = 'select FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE from INIT_HASH where FILE_NAME =' + '"' + filename + '"'
+    def select_hash(self, filename):
+        cur = self.create_connection()
+        sqlstring = 'select FILE_NAME, HASH, SCANED_FLAG, INSERTED_DATE, UPDATED_DATE from HASH where FILE_NAME =' + '"' + filename + '"'
         r = cur.cursor()
         r.execute(sqlstring)
         detail_hash = r.fetchall()
