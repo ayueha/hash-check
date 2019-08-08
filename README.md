@@ -23,6 +23,6 @@ i : initial creation
 f : single file hash creation  
 f : direcrory recrusive hash creation  
 Optional : --PATH  
-###Example
+### Example
 hash.py f --PATH /home/username/test.txt  --- single file hash creation  
 
