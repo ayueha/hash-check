@@ -63,6 +63,7 @@ class HashScan():
         """
         scanning : /usr/bin /home/[current user] /tmp /opt
         and import hash info via sql script
+        NEED recrusive search function
         :return:
         """
         if self.option == "i":

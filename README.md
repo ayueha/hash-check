@@ -1,7 +1,17 @@
-# test
+#Environment
 inotifywait and python script
 OS:raspberry pi 3
+DB:sqlite3
 
-inotify-tools/oldstable 3.14-2 armhf
-inotify-hookable/oldstable 0.09-1 all
-inotify-tools/oldstable 3.14-2 armhf
+#Not yet functioned
+
+Recrusive directory search
+SAVAPI query process
+Automatic scan based on inotifywait 
+
+
+#Functioned
+
+Initial hash creation
+single file hash conformation
+Option parser
