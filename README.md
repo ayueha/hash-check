@@ -19,7 +19,7 @@ Option parser
 Mandatory : process letter [i / f / d]  
 i : initial creation  
 f : single file hash creation  
-f : direcrory recrusive hash creation  
+d : direcrory recrusive hash creation  
 Optional : --PATH  
 
 ### Example

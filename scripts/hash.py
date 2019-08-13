@@ -38,10 +38,11 @@ def parser():
     :return:args.attributes as script options [i] initialize hash database, [d] create hash under a directory, [f] create a file hash
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] create a file hash')
+    parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] create a file hash, [w] for inotifywait option')
     parser.add_argument('--path', help='mandatory for directory or file hash creating')
+    parser.add_argument('--string', help='mandatory for directory watchdog tool; inotifywait')
     args = parser.parse_args()
-    return args.attributes, args.path
+    return args.attributes, args.path, args.string
 
 
 class HashScan():
@@ -53,11 +54,12 @@ class HashScan():
     file : hashed file in hex
     """
 
-    def __init__(self, option, path):
+    def __init__(self, option, path, event_string):
         self.option = option
         self.path = path
         self.db = DatabaseInfo()
         self.file_hash =''
+        self.string_event = event_string
 
     def create_info(self):
         """
@@ -173,6 +175,7 @@ class HashScan():
                 print('These files exit in database as a file name , but hash is different')
                 for files in suspicious_array:
                     self.check_dir(suspicious_array)
+        elif self.option == 'w':
 
 
     def check_file(self,filepath):
@@ -382,7 +385,7 @@ class DatabaseInfo():
 
 if __name__ == '__main__':
     options = parser()
-    scan = HashScan(options[0],options[1])
+    scan = HashScan(options[0],options[1],options[2])
     if scan.option == 'i':
         scan.create_info()
     elif scan.option == 'd' or scan.option == 'f':
@@ -390,6 +393,8 @@ if __name__ == '__main__':
             scan.create_info()
         else:
             print('Lack of file path information \n')
+    elif scan.option =='w':
+        scan.create_info()
 
 
 
