@@ -4,14 +4,12 @@ OS:raspberry pi 3
 DB:sqlite3  
 
 ## Not yet functioned
-
-Recrusive directory search  
 SAVAPI query process  
 Automatic scan based on inotifywait  
 
 
 ## Functioned
-
+Recrusive directory search  
 Initial hash creation  
 single file hash conformation  
 Option parser
@@ -23,6 +21,9 @@ i : initial creation
 f : single file hash creation  
 f : direcrory recrusive hash creation  
 Optional : --PATH  
+
 ### Example
-hash.py f --PATH /home/username/test.txt  --- single file hash creation  
+hash.py i                                 : initial database creatuion  
+hash.py f --PATH /home/username/test.txt  : single file hash creation  
+hash.py d --PATH /home/username/          : directory file hash creation  
 
