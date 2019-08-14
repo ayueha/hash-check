@@ -27,9 +27,9 @@ from hmac import compare_digest
 
 
 """GLOBAL"""
-DB_PATH = '../database/hashmaster'
+DB_PATH = '/home/mika/hash-check/database/hashmaster'
 SERVER_IP = '192.168.10.30'
-LOG_PATH = '../log'
+LOG_PATH = '/home/mika/hash-check/hash-check/log'
 
 
 def parser():
@@ -82,7 +82,7 @@ class HashScan():
             if self.check_file(self.path):
                 record_number=self.db.find_hash(self.hash_string(self.path), self.path)
             if record_number[0][0] > 0 and record_number[1][0] == 1:
-                previous_hash = self.print_info(record_number)
+                previous_hash = self.print_info(record_number[0][1])
                 current_hash = self.hash_string(self.path)
                 if (compare_digest(previous_hash, current_hash)):
                     print("Hash is same. Get hash updated ? \npress[Enter] to send to SAVAPI or [a] to abort")
@@ -176,7 +176,23 @@ class HashScan():
                 for files in suspicious_array:
                     self.check_dir(suspicious_array)
         elif self.option == 'w':
+            string_array = self.string_event.split(' ',maxsplit=2)
+            file_path = string_array[0]+string_array[2]
+            if self.check_file(file_path):
+                current_hash = self.hash_string(file_path)
+                record_number = self.db.find_hash(current_hash, file_path)
 
+                if len(record_number)>0 :
+                    if record_number[0][0] > 0 and record_number[1][0] == 1:
+                        print ('current info exist send info to SAVAPI')
+                    elif record_number[0][0] == 0 and record_number[1][0] == 0:
+                        print ('current info inexist send info to SAVAPI')
+                    elif record_number[0][0] == 0 and record_number[1][0] > 0:
+                        print('file exists but hash does not')
+                    elif record_number[0][0] > 0 and record_number[1][0] == 0:
+                        print('hash exists but file does not')
+                else:
+                    print ('record not found')
 
     def check_file(self,filepath):
         if os.path.isfile(filepath) and os.path.getsize(filepath):
@@ -336,8 +352,12 @@ class DatabaseInfo():
            If fails connection print erroe message and return None
            connection variable : db_path
         """
-        con = sqlite3.connect(self.db_path)
-        return con
+        try:
+            con = sqlite3.connect(self.db_path)
+            return con
+        except sqlite3.Error as e:
+            print( e.args[0])
+            return None
 
     def insert_column(self, hash, new_hash,filename, option, colum_number):
         if option == 'i':
@@ -389,12 +409,15 @@ if __name__ == '__main__':
     if scan.option == 'i':
         scan.create_info()
     elif scan.option == 'd' or scan.option == 'f':
-        if scan.path != "":
+        if scan.path != '':
             scan.create_info()
         else:
             print('Lack of file path information \n')
     elif scan.option =='w':
-        scan.create_info()
+        if scan.string_event !='':
+            scan.create_info()
+        else:
+            print('Lack of inotifywait watchdog log information\n')
 
 
 
