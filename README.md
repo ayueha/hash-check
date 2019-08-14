@@ -16,15 +16,21 @@ Option parser
 Automatic scan based on inotifywait  
 
 ## Option Parser
-
 Mandatory : process letter [i / f / d]  
 i : initial creation  
 f : single file hash creation  
 d : direcrory recrusive hash creation  
 Optional : --PATH  
 
+### inotifywait
+Directory watchdog execution  
+Example : bash scripts/scan.sh /home/username  
+
+
 ### Example
 hash.py i                                 : initial database creatuion  
 hash.py f --PATH /home/username/test.txt  : single file hash creation  
 hash.py d --PATH /home/username/          : directory file hash creation  
+
+
 

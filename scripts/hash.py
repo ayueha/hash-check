@@ -40,7 +40,7 @@ def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('attributes', help='[i] initialize hash database, [d] create hash under a directory, [f] create a file hash, [w] for inotifywait option')
     parser.add_argument('--path', help='mandatory for directory or file hash creating')
-    parser.add_argument('--string', help='mandatory for directory watchdog tool; inotifywait')
+    parser.add_argument('--string', help='mandatory for file path watchdog tool; inotifywait')
     args = parser.parse_args()
     return args.attributes, args.path, args.string
 
@@ -118,7 +118,7 @@ class HashScan():
                 print('File Path   : ' + self.path + ' | ' + 'Current File Hash   : ' + self.hash_string(self.path) + ' | Database File Hash  :' + record_number[1][1] + ' | Last Update : ' + record_number[1][2] )
                 str = self.check_suspicious_file()
                 if (str == 'q'):
-                    self.query_hash(self)
+                    self.query_hash()
                 elif (str == 'u'):
                     self.db.insert_column(record_number[1][1],self.hash_string(self.path), self.path, self.option, record_number[1][0])
                 elif (str == 'a'):
@@ -156,17 +156,17 @@ class HashScan():
                 if (str == ''):
                     hash_array = []
                     for files in new_array:
-                        self.hash = self.hash_string(files)
-                        hash_array.append(self.hash)
+                        self.file_hash = self.hash_string(files)
+                        hash_array.append(self.file_hash)
                         print ('insert :' + files)
-                        self.db.insert_column('', self.hash, files, self.option, 0)
+                        self.db.insert_column('', self.file_hash, files, self.option, 0)
 
                     print ('created hash information \n Get them sent to SAVAPI ? press[Enter] to send or [a] to abort')
                     str = input()
                     if (str == 'a' or str.lower() == 'a'):
                         print ('abort process')
                     elif (str == ''):
-                        for self.hash in hash_array:
+                        for self.file_hash in hash_array:
                             self.query_hash()
                     else:
                         print ("Invalid option... end the process")
@@ -179,22 +179,22 @@ class HashScan():
             string_array = self.string_event.split(' ',maxsplit=2)
             file_path = string_array[0]+string_array[2]
             if self.check_file(file_path):
-                self.hash = self.hash_string(file_path)
-                record_number = self.db.find_hash(self.hash, file_path)
+                self.file_hash = self.hash_string(file_path)
+                record_number = self.db.find_hash(self.file_hash, file_path)
 
                 if len(record_number)>0 :
                     if record_number[0][0] > 0 and record_number[1][0] == 1:
-                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.file_hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
                     elif record_number[0][0] == 0 and record_number[1][0] == 0:
                         print ('current info inexist send info to SAVAPI')
                         self.query_hash(self)
                     elif record_number[0][0] == 0 and record_number[1][0] > 0:
                         print('file exists but hash does not')
-                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  : None  | Last Update : ' + record_number[0][3])
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.file_hash + ' | Database File Hash  : None  | Last Update : ' + record_number[0][3])
                         self.query_hash(self)
                     elif record_number[0][0] > 0 and record_number[1][0] == 0:
                         print('hash exists but file does not')
-                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.file_hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
                         self.query_hash(self)
                 else:
                     print ('record not found')
@@ -327,7 +327,7 @@ class HashScan():
                     self.db.insert_column('',arr[2], arr[1], self.option, 0)
                 str = ''
             elif str.lower() == "u":
-                self.hash = arr[2]
+                self.file_hash = arr[2]
                 self.db.insert_column(arr[3], arr[2],arr[1], self.option, 1)
                 str = ''
             elif str.lower() =='a':
