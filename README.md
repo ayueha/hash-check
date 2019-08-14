@@ -5,7 +5,7 @@ DB:sqlite3
 
 ## Not yet functioned
 SAVAPI query process  
-Automatic scan based on inotifywait  
+
 
 
 ## Functioned
@@ -13,6 +13,7 @@ Recrusive directory search
 Initial hash creation  
 single file hash conformation  
 Option parser
+Automatic scan based on inotifywait  
 
 ## Option Parser
 

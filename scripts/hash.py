@@ -179,18 +179,23 @@ class HashScan():
             string_array = self.string_event.split(' ',maxsplit=2)
             file_path = string_array[0]+string_array[2]
             if self.check_file(file_path):
-                current_hash = self.hash_string(file_path)
-                record_number = self.db.find_hash(current_hash, file_path)
+                self.hash = self.hash_string(file_path)
+                record_number = self.db.find_hash(self.hash, file_path)
 
                 if len(record_number)>0 :
                     if record_number[0][0] > 0 and record_number[1][0] == 1:
-                        print ('current info exist send info to SAVAPI')
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
                     elif record_number[0][0] == 0 and record_number[1][0] == 0:
                         print ('current info inexist send info to SAVAPI')
+                        self.query_hash(self)
                     elif record_number[0][0] == 0 and record_number[1][0] > 0:
                         print('file exists but hash does not')
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  : None  | Last Update : ' + record_number[0][3])
+                        self.query_hash(self)
                     elif record_number[0][0] > 0 and record_number[1][0] == 0:
                         print('hash exists but file does not')
+                        print('File Path   : ' + file_path + ' | ' + 'Current File Hash   : ' + self.hash + ' | Database File Hash  :' + record_number[0][1] + ' | Last Update : ' + record_number[0][3])
+                        self.query_hash(self)
                 else:
                     print ('record not found')
 
