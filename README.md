@@ -4,7 +4,7 @@ OS:raspberry pi 3
 DB:sqlite3  
 
 ## Not yet functioned
-SAVAPI query process  
+Virus Total query process  
 
 
 
